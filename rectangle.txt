@@ -1,0 +1,73 @@
+#include "XPLMDisplay.h"
+#include "XPLMGraphics.h"
+#include <GL/gl.h>
+
+// Global variables for our custom window
+XPLMWindowID g_window;
+
+void DrawRectangle(float left, float top, float right, float bottom) {
+    glColor3f(1.0f, 0.0f, 0.0f); // Red color
+    glBegin(GL_LINE_LOOP);       // Draw a hollow rectangle
+    glVertex2f(left, top);
+    glVertex2f(right, top);
+    glVertex2f(right, bottom);
+    glVertex2f(left, bottom);
+    glEnd();
+}
+
+// Callback for drawing
+void MyDrawWindowCallback(XPLMWindowID inWindowID, void* inRefcon) {
+    int l, t, r, b;
+    XPLMGetWindowGeometry(inWindowID, &l, &t, &r, &b);
+
+    // OpenGL context setup
+    XPLMBindTexture2d(0, 0); // Default texture
+    glPushMatrix();
+    glTranslatef((float)l, (float)b, 0.0f);
+
+    // Draw a rectangle in the window
+    DrawRectangle(10, t - b - 10, r - l - 10, 10);
+
+    glPopMatrix();
+}
+
+// Plugin start
+PLUGIN_API int XPluginStart(char* outName, char* outSig, char* outDesc) {
+    strcpy(outName, "HollowRectangle");
+    strcpy(outSig, "yourdomain.hollowrectangle");
+    strcpy(outDesc, "Draws a hollow rectangle in the 2D cockpit.");
+
+    // Create a custom window
+    XPLMCreateWindow_t params;
+    params.structSize = sizeof(params);
+    params.left = 100;
+    params.top = 600;
+    params.right = 400;
+    params.bottom = 300;
+    params.visible = 1;
+    params.drawWindowFunc = MyDrawWindowCallback;
+    params.handleMouseClickFunc = NULL;
+    params.handleKeyFunc = NULL;
+    params.handleCursorFunc = NULL;
+    params.handleMouseWheelFunc = NULL;
+    params.refcon = NULL;
+    params.decorateAsFloatingWindow = xplm_WindowDecorationSelfDecorated;
+    params.layer = xplm_WindowLayerFloatingWindows;
+    params.handleRightClickFunc = NULL;
+    g_window = XPLMCreateWindowEx(&params);
+
+    return 1;
+}
+
+PLUGIN_API void XPluginStop() {
+    if (g_window) {
+        XPLMDestroyWindow(g_window);
+        g_window = NULL;
+    }
+}
+
+PLUGIN_API void XPluginDisable() {}
+
+PLUGIN_API int XPluginEnable() { return 1; }
+
+PLUGIN_API void XPluginReceiveMessage(XPLMPluginID inFrom, int inMsg, void* inParam) {}
